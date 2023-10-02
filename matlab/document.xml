@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:pPr><w:pStyle w:val="code"/></w:pPr><w:r><w:t><![CDATA[classdef AreaUnderCurveApp < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        CurveCalculatorO1  matlab.ui.Figure
+        AreaUndertheCurveCalculatorLabel  matlab.ui.control.Label
+        ResultLabel        matlab.ui.control.Label
+        CalculateButton    matlab.ui.control.Button
+        UpperLimitEdit     matlab.ui.control.EditField
+        Label_3            matlab.ui.control.Label
+        LowerLimitEdit     matlab.ui.control.EditField
+        Label_2            matlab.ui.control.Label
+        EquationEdit       matlab.ui.control.EditField
+        Label_1            matlab.ui.control.Label
+        CurveAxes          matlab.ui.control.UIAxes
+    end
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Button pushed function: CalculateButton
+        function CalculateButtonPushed(app, event)
+          % Get user input
+    equation = app.EquationEdit.Value;
+    lowerLimitX = str2double(app.LowerLimitEdit.Value);
+    upperLimitX = str2double(app.UpperLimitEdit.Value);
+
+    % Check for valid input
+    if isempty(equation) || isnan(lowerLimitX) || isnan(upperLimitX)
+        app.ResultLabel.Text = 'Invalid input';
+        return;
+    end
+
+    % Define symbolic variable 'x'
+    syms x;
+
+    % Create the function
+    try
+        func = str2sym(equation); % Convert equation to a symbolic expression
+    catch
+        app.ResultLabel.Text = 'Invalid function';
+        return;
+    end
+
+    % Calculate the area under the curve using integral with respect to 'x'
+    try
+        % Calculate the area under the curve using the specified limits
+        area = int(func, x, lowerLimitX, upperLimitX);
+        area = abs(double(area)); % Take the absolute value of the result
+
+        app.ResultLabel.Text = ['Area under the curve: ' num2str(area)];
+
+        % Plot the curve
+        xValues = linspace(lowerLimitX, upperLimitX, 1000); % Adjust the number of points for smoother plotting
+        yValues = double(subs(func, x, xValues));
+
+        % Plot the curve on the Axes component
+        plot(app.CurveAxes, xValues, yValues);
+        title(app.CurveAxes, 'Curve Visualization');
+        xlabel(app.CurveAxes, 'x');
+        ylabel(app.CurveAxes, 'y');
+
+        % Shade the area under the curve within the specified x-axis limits
+        hold(app.CurveAxes, 'on');
+        fill(app.CurveAxes, [xValues, fliplr(xValues)], [yValues, zeros(size(yValues))], 'b', 'FaceAlpha', 0.3);
+        hold(app.CurveAxes, 'off');
+
+    catch e
+        app.ResultLabel.Text = ['Error calculating area: ' e.message];
+    end
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create CurveCalculatorO1 and hide until all components are created
+            app.CurveCalculatorO1 = uifigure('Visible', 'off');
+            app.CurveCalculatorO1.Position = [100 100 357 665];
+            app.CurveCalculatorO1.Name = 'MATLAB App';
+            app.CurveCalculatorO1.Pointer = 'hand';
+
+            % Create CurveAxes
+            app.CurveAxes = uiaxes(app.CurveCalculatorO1);
+            title(app.CurveAxes, 'Graph')
+            xlabel(app.CurveAxes, 'X')
+            ylabel(app.CurveAxes, 'Y')
+            zlabel(app.CurveAxes, 'Z')
+            app.CurveAxes.Position = [1 20 348 272];
+
+            % Create Label_1
+            app.Label_1 = uilabel(app.CurveCalculatorO1);
+            app.Label_1.FontWeight = 'bold';
+            app.Label_1.Position = [62 542 90 28];
+            app.Label_1.Text = 'Enter Equation';
+
+            % Create EquationEdit
+            app.EquationEdit = uieditfield(app.CurveCalculatorO1, 'text');
+            app.EquationEdit.Position = [160 544 149 25];
+
+            % Create Label_2
+            app.Label_2 = uilabel(app.CurveCalculatorO1);
+            app.Label_2.FontWeight = 'bold';
+            app.Label_2.Position = [65 483 72 22];
+            app.Label_2.Text = 'Lower Limit';
+
+            % Create LowerLimitEdit
+            app.LowerLimitEdit = uieditfield(app.CurveCalculatorO1, 'text');
+            app.LowerLimitEdit.Position = [159 483 100 22];
+
+            % Create Label_3
+            app.Label_3 = uilabel(app.CurveCalculatorO1);
+            app.Label_3.FontWeight = 'bold';
+            app.Label_3.Position = [64 513 72 22];
+            app.Label_3.Text = 'Upper Limit';
+
+            % Create UpperLimitEdit
+            app.UpperLimitEdit = uieditfield(app.CurveCalculatorO1, 'text');
+            app.UpperLimitEdit.Position = [160 513 100 22];
+
+            % Create CalculateButton
+            app.CalculateButton = uibutton(app.CurveCalculatorO1, 'push');
+            app.CalculateButton.ButtonPushedFcn = createCallbackFcn(app, @CalculateButtonPushed, true);
+            app.CalculateButton.BackgroundColor = [0.7647 0.949 0.6941];
+            app.CalculateButton.FontWeight = 'bold';
+            app.CalculateButton.FontAngle = 'italic';
+            app.CalculateButton.Position = [134 411 101 23];
+            app.CalculateButton.Text = 'Calculate Area.';
+
+            % Create ResultLabel
+            app.ResultLabel = uilabel(app.CurveCalculatorO1);
+            app.ResultLabel.HorizontalAlignment = 'center';
+            app.ResultLabel.WordWrap = 'on';
+            app.ResultLabel.FontName = 'Terminal';
+            app.ResultLabel.FontSize = 14;
+            app.ResultLabel.FontWeight = 'bold';
+            app.ResultLabel.FontAngle = 'italic';
+            app.ResultLabel.Position = [59 313 250 88];
+            app.ResultLabel.Text = '';
+
+            % Create AreaUndertheCurveCalculatorLabel
+            app.AreaUndertheCurveCalculatorLabel = uilabel(app.CurveCalculatorO1);
+            app.AreaUndertheCurveCalculatorLabel.HorizontalAlignment = 'center';
+            app.AreaUndertheCurveCalculatorLabel.FontSize = 18;
+            app.AreaUndertheCurveCalculatorLabel.FontWeight = 'bold';
+            app.AreaUndertheCurveCalculatorLabel.FontAngle = 'italic';
+            app.AreaUndertheCurveCalculatorLabel.Position = [37 593 297 53];
+            app.AreaUndertheCurveCalculatorLabel.Text = 'Area Under the Curve Calculator';
+
+            % Show the figure after all components are created
+            app.CurveCalculatorO1.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = AreaUnderCurveApp
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.CurveCalculatorO1)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.CurveCalculatorO1)
+        end
+    end
+end]]></w:t></w:r></w:p></w:body></w:document>
